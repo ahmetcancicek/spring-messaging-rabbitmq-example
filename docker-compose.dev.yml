@@ -12,6 +12,7 @@ services:
       - "3306:3306"
 
   rabbitmq:
+    container_name: gitbank_rabbitmq
     image: rabbitmq:management-alpine
     restart: always
     environment:
