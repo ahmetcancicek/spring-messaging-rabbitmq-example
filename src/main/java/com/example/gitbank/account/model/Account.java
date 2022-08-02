@@ -10,11 +10,12 @@ import javax.persistence.Id;
 
 @Setter
 @Getter
+@Builder
+@Entity
+@ToString
 @EqualsAndHashCode
 @AllArgsConstructor
 @NoArgsConstructor
-@Builder
-@Entity
 public class Account {
 
     @Id

@@ -13,11 +13,12 @@ import java.util.Date;
 
 @Setter
 @Getter
+@Builder
+@Entity
+@ToString
 @EqualsAndHashCode
 @AllArgsConstructor
 @NoArgsConstructor
-@Builder
-@Entity
 public class Customer {
 
     @Id
@@ -31,7 +32,7 @@ public class Customer {
 
     private String firstName;
 
-    private String secondName;
+    private String lastName;
 
     private Date dateOfBirth;
 }
