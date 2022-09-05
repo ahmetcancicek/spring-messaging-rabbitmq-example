@@ -9,23 +9,21 @@ import org.springframework.stereotype.Component;
 public class CustomerConverter {
 
     public Customer toCustomer(CustomerRequest customerRequest) {
-        Customer customer = Customer.builder()
+        return Customer.builder()
+                .securityNo(customerRequest.getSecurityNo())
                 .firstName(customerRequest.getFirstName())
                 .lastName(customerRequest.getLastName())
                 .dateOfBirth(customerRequest.getDateOfBirth())
                 .build();
-
-        return customer;
     }
 
     public CustomerResponse fromCustomer(Customer customer) {
-        CustomerResponse customerResponse = CustomerResponse.builder()
+        return CustomerResponse.builder()
                 .id(customer.getId())
+                .securityNo(customer.getSecurityNo())
                 .firstName(customer.getFirstName())
                 .lastName(customer.getLastName())
                 .dateOfBirth(customer.getDateOfBirth())
                 .build();
-
-        return customerResponse;
     }
 }
