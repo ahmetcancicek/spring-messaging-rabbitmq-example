@@ -2,6 +2,7 @@ package com.example.gitbank.customer.dto;
 
 import lombok.*;
 
+import java.time.LocalDate;
 import java.util.Date;
 
 @Setter
@@ -12,7 +13,8 @@ import java.util.Date;
 @AllArgsConstructor
 public class CustomerResponse {
     private String id;
+    private String securityNo;
     private String firstName;
     private String lastName;
-    private Date dateOfBirth;
+    private LocalDate dateOfBirth;
 }
