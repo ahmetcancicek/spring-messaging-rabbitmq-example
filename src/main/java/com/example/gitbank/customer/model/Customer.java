@@ -4,10 +4,8 @@ package com.example.gitbank.customer.model;
 import lombok.*;
 import org.hibernate.annotations.GenericGenerator;
 
-import javax.persistence.Column;
-import javax.persistence.Entity;
-import javax.persistence.GeneratedValue;
-import javax.persistence.Id;
+import javax.persistence.*;
+import java.time.LocalDate;
 import java.util.Date;
 
 
@@ -16,9 +14,9 @@ import java.util.Date;
 @Builder
 @Entity
 @ToString
-@EqualsAndHashCode
 @AllArgsConstructor
 @NoArgsConstructor
+@Table(name = "customer")
 public class Customer {
 
     @Id
@@ -30,9 +28,12 @@ public class Customer {
     @Column(name = "id", unique = false, nullable = false)
     private String id;
 
+    @Column(unique = true, nullable = false)
+    private String securityNo;
+
     private String firstName;
 
     private String lastName;
 
-    private Date dateOfBirth;
+    private LocalDate dateOfBirth;
 }
