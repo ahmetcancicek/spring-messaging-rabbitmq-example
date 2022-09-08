@@ -4,6 +4,7 @@ import com.example.gitbank.common.exception.ResourceNotFoundException;
 import com.example.gitbank.customer.converter.CustomerConverter;
 import com.example.gitbank.customer.dto.CustomerRequest;
 import com.example.gitbank.customer.dto.CustomerResponse;
+import com.example.gitbank.customer.event.CustomerCreatedEvent;
 import com.example.gitbank.customer.model.Customer;
 import com.example.gitbank.customer.repository.CustomerRepository;
 import lombok.RequiredArgsConstructor;
@@ -31,7 +32,7 @@ public class CustomerServiceImpl implements CustomerService {
         Customer customer = customerConverter.toCustomer(customerRequest);
         customerRepository.save(customer);
         log.info("Customer saved to database: [{}]", customer);
-        applicationEventPublisher.publishEvent(customer);
+        applicationEventPublisher.publishEvent(CustomerCreatedEvent.from(customer));
         return customerConverter.fromCustomer(customer);
     }
 
