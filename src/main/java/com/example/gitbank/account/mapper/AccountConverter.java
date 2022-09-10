@@ -11,7 +11,7 @@ public class AccountConverter {
     public Account toAccount(AccountRequest accountRequest) {
         return Account.builder()
                 .customerId(accountRequest.getCustomerId())
-                .name(accountRequest.getAccountName())
+                .name(accountRequest.getName())
                 .balance(accountRequest.getBalance())
                 .currency(accountRequest.getCurrency())
                 .build();

@@ -4,6 +4,7 @@ import com.example.gitbank.account.model.Currency;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.Setter;
+import lombok.ToString;
 
 import javax.validation.constraints.NotBlank;
 import java.math.BigDecimal;
@@ -12,6 +13,7 @@ import java.math.BigDecimal;
 @Setter
 @Getter
 @Builder
+@ToString
 public class AccountRequest {
 
     @NotBlank
@@ -21,7 +23,7 @@ public class AccountRequest {
     private String securityNo;
 
     @NotBlank
-    private String accountName;
+    private String name;
 
     @Builder.Default
     private BigDecimal balance = BigDecimal.ZERO;
