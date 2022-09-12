@@ -4,12 +4,10 @@ import com.example.gitbank.common.exception.ResourceNotFoundException;
 import com.example.gitbank.customer.converter.CustomerConverter;
 import com.example.gitbank.customer.dto.CustomerRequest;
 import com.example.gitbank.customer.dto.CustomerResponse;
-import com.example.gitbank.customer.event.CustomerCreatedEvent;
 import com.example.gitbank.customer.model.Customer;
 import com.example.gitbank.customer.repository.CustomerRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -22,18 +20,18 @@ public class CustomerServiceImpl implements CustomerService {
 
     private final CustomerRepository customerRepository;
     private final CustomerConverter customerConverter;
-    private final ApplicationEventPublisher applicationEventPublisher;
+    private final CustomerNotificationService customerNotificationService;
 
     @Transactional
     public CustomerResponse createCustomer(CustomerRequest customerRequest) {
         log.info("Trying to create customer: [{}]", customerRequest.toString());
         if (existsBySecurityNo(customerRequest.getSecurityNo()))
             throw new ResourceNotFoundException("Customer", "Security No", customerRequest.getSecurityNo());
-        Customer customer = customerConverter.toCustomer(customerRequest);
+        Customer customer = customerConverter.toCustomerFromCustomerRequest(customerRequest);
         customerRepository.save(customer);
         log.info("Customer saved to database: [{}]", customer);
-        applicationEventPublisher.publishEvent(CustomerCreatedEvent.from(customer));
-        return customerConverter.fromCustomer(customer);
+        customerNotificationService.sendToQueue(customer);
+        return customerConverter.fromCustomerToCustomerResponse(customer);
     }
 
     public Optional<Customer> findById(String id) {
@@ -50,7 +48,7 @@ public class CustomerServiceImpl implements CustomerService {
 
     @Override
     public CustomerResponse getCustomerById(String id) {
-        return customerRepository.findById(id).map(customerConverter::fromCustomer)
+        return customerRepository.findById(id).map(customerConverter::fromCustomerToCustomerResponse)
                 .orElseThrow(() -> new ResourceNotFoundException("Customer", "id", id));
     }
 
