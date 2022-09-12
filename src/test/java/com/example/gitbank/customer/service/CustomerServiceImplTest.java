@@ -32,7 +32,7 @@ class CustomerServiceImplTest {
 
     CustomerRepository customerRepository;
 
-    ApplicationEventPublisher applicationEventPublisher;
+    CustomerNotificationServiceImpl customerNotificationService;
 
     CustomerConverter customerConverter;
 
@@ -40,8 +40,8 @@ class CustomerServiceImplTest {
     void setUp() {
         customerRepository = Mockito.mock(CustomerRepository.class);
         customerConverter = Mockito.mock(CustomerConverter.class);
-        applicationEventPublisher = Mockito.mock(ApplicationEventPublisher.class);
-        customerService = new CustomerServiceImpl(customerRepository, customerConverter, applicationEventPublisher);
+        customerNotificationService = Mockito.mock(CustomerNotificationServiceImpl.class);
+        customerService = new CustomerServiceImpl(customerRepository, customerConverter, customerNotificationService);
     }
 
     @Test
@@ -63,8 +63,8 @@ class CustomerServiceImplTest {
                 .dateOfBirth(customer.getDateOfBirth())
                 .build();
 
-        given(customerConverter.toCustomer(any())).willReturn(customer);
-        given(customerConverter.fromCustomer(any())).willReturn(customerResponse);
+        given(customerConverter.toCustomerFromCustomerRequest(any())).willReturn(customer);
+        given(customerConverter.fromCustomerToCustomerResponse(any())).willReturn(customerResponse);
         given(customerRepository.existsBySecurityNo(any())).willReturn(false);
         given(customerRepository.save(any())).willReturn(customer);
 
@@ -79,12 +79,10 @@ class CustomerServiceImplTest {
         CustomerResponse expectedCustomerResponse = customerService.createCustomer(customerRequest);
 
         // then
+        assertEquals(customerResponse, expectedCustomerResponse);
         verify(customerRepository, times(1)).save(any());
-        assertEquals(customer.getSecurityNo(), expectedCustomerResponse.getSecurityNo());
-        assertEquals(customer.getDateOfBirth(), expectedCustomerResponse.getDateOfBirth());
-        assertEquals(customer.getFirstName(), expectedCustomerResponse.getFirstName());
-        assertEquals(customer.getLastName(), expectedCustomerResponse.getLastName());
-        assertEquals(customer.getId(), expectedCustomerResponse.getId());
+        verify(customerConverter, times(1)).fromCustomerToCustomerResponse(any());
+        verify(customerConverter, times(1)).toCustomerFromCustomerRequest(any());
     }
 
     @Test
@@ -158,20 +156,16 @@ class CustomerServiceImplTest {
                 .dateOfBirth(customer.getDateOfBirth())
                 .build();
 
-        given(customerConverter.fromCustomer(any())).willReturn(customerResponse);
+        given(customerConverter.fromCustomerToCustomerResponse(any())).willReturn(customerResponse);
         given(customerRepository.findById(any())).willReturn(Optional.of(customer));
 
         // when
         CustomerResponse expectedCustomerResponse = customerService.getCustomerById(customer.getId());
 
         // then
+        assertEquals(customerResponse, expectedCustomerResponse);
         verify(customerRepository, times(1)).findById(any());
-        assertNotNull(expectedCustomerResponse);
-        assertEquals(customer.getSecurityNo(), expectedCustomerResponse.getSecurityNo());
-        assertEquals(customer.getDateOfBirth(), expectedCustomerResponse.getDateOfBirth());
-        assertEquals(customer.getFirstName(), expectedCustomerResponse.getFirstName());
-        assertEquals(customer.getLastName(), expectedCustomerResponse.getLastName());
-        assertEquals(customer.getId(), expectedCustomerResponse.getId());
+        verify(customerConverter, times(1)).fromCustomerToCustomerResponse(any());
     }
 
     @Test
