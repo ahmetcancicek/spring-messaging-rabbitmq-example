@@ -2,6 +2,7 @@ package com.example.gitbank.account.mapper;
 
 import com.example.gitbank.account.dto.AccountRequest;
 import com.example.gitbank.account.dto.AccountResponse;
+import com.example.gitbank.account.messaging.AccountNotification;
 import com.example.gitbank.account.model.Account;
 import com.example.gitbank.account.model.Currency;
 import org.junit.jupiter.api.BeforeEach;
@@ -28,16 +29,16 @@ class AccountConverterTest {
     void givenAccountRequest_whenToAccount_thenReturnAccount() {
         AccountRequest accountRequest = AccountRequest.builder()
                 .securityNo(UUID.randomUUID().toString())
-                .accountName("My Debit Account")
+                .name("My Debit Account")
                 .balance(BigDecimal.ONE)
                 .currency(Currency.USD)
                 .customerId(UUID.randomUUID().toString())
                 .build();
 
-        Account account = accountConverter.toAccount(accountRequest);
+        Account account = accountConverter.toAccountFromAccountRequest(accountRequest);
 
         assertEquals(accountRequest.getCustomerId(), account.getCustomerId());
-        assertEquals(accountRequest.getAccountName(), account.getName());
+        assertEquals(accountRequest.getName(), account.getName());
         assertEquals(accountRequest.getBalance(), account.getBalance());
         assertEquals(accountRequest.getCurrency(), account.getCurrency());
     }
@@ -45,20 +46,39 @@ class AccountConverterTest {
     @Test
     void givenAccount_whenFromAccount_thenReturnAccountResponse() {
         Account account = Account.builder()
+                .id(UUID.randomUUID().toString())
                 .name("My Debit Account")
                 .balance(BigDecimal.ONE)
                 .currency(Currency.USD)
                 .customerId(UUID.randomUUID().toString())
                 .build();
 
-        AccountResponse accountResponse = accountConverter.fromAccount(account);
+        AccountResponse accountResponse = accountConverter.fromAccountToAccountResponse(account);
 
         assertEquals(account.getName(), accountResponse.getName());
         assertEquals(account.getId(), accountResponse.getId());
         assertEquals(account.getCustomerId(), accountResponse.getCustomerId());
         assertEquals(account.getBalance(), accountResponse.getBalance());
         assertEquals(account.getCurrency(), accountResponse.getCurrency());
+    }
 
+    @Test
+    void givenAccount_whenFromAccountToAccountNotification_thenReturnAccountNotification() {
+        Account account = Account.builder()
+                .id(UUID.randomUUID().toString())
+                .name("My Debit Account")
+                .balance(BigDecimal.ONE)
+                .currency(Currency.USD)
+                .customerId(UUID.randomUUID().toString())
+                .build();
+
+        AccountNotification accountNotification = accountConverter.fromAccountToAccountNotification(account);
+
+        assertEquals(account.getId(), accountNotification.getId());
+        assertEquals(account.getName(), accountNotification.getName());
+        assertEquals(account.getBalance(), accountNotification.getBalance());
+        assertEquals(account.getCurrency(), accountNotification.getCurrency());
+        assertEquals(account.getCustomerId(), accountNotification.getCustomerId());
     }
 
 }
