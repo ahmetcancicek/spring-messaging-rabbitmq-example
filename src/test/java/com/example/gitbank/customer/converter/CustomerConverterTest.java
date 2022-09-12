@@ -2,6 +2,7 @@ package com.example.gitbank.customer.converter;
 
 import com.example.gitbank.customer.dto.CustomerRequest;
 import com.example.gitbank.customer.dto.CustomerResponse;
+import com.example.gitbank.customer.messaging.CustomerNotification;
 import com.example.gitbank.customer.model.Customer;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -21,7 +22,7 @@ class CustomerConverterTest {
     }
 
     @Test
-    void givenCustomerRequest_whenToCustomer_thenReturnCustomer() {
+    void givenCustomerRequest_whenToCustomerFromCustomerRequest_thenReturnCustomer() {
         CustomerRequest customerRequest = CustomerRequest.builder()
                 .securityNo(UUID.randomUUID().toString())
                 .firstName("George")
@@ -29,7 +30,7 @@ class CustomerConverterTest {
                 .dateOfBirth(LocalDate.of(1980, 11, 12))
                 .build();
 
-        Customer customer = customerConverter.toCustomer(customerRequest);
+        Customer customer = customerConverter.toCustomerFromCustomerRequest(customerRequest);
 
         assertEquals(customerRequest.getSecurityNo(), customer.getSecurityNo());
         assertEquals(customerRequest.getFirstName(), customer.getFirstName());
@@ -38,7 +39,7 @@ class CustomerConverterTest {
     }
 
     @Test
-    void givenCustomer_whenFromCustomer_thenReturnCustomerResponse() {
+    void givenCustomer_whenFromCustomerToCustomerResponse_thenReturnCustomerResponse() {
         Customer customer = Customer.builder()
                 .id(UUID.randomUUID().toString())
                 .securityNo(UUID.randomUUID().toString())
@@ -47,12 +48,30 @@ class CustomerConverterTest {
                 .dateOfBirth(LocalDate.of(1980, 11, 12))
                 .build();
 
-        CustomerResponse customerResponse = customerConverter.fromCustomer(customer);
+        CustomerResponse customerResponse = customerConverter.fromCustomerToCustomerResponse(customer);
 
         assertEquals(customer.getId(), customerResponse.getId());
         assertEquals(customer.getSecurityNo(), customerResponse.getSecurityNo());
         assertEquals(customer.getFirstName(), customerResponse.getFirstName());
         assertEquals(customer.getLastName(), customerResponse.getLastName());
         assertEquals(customer.getDateOfBirth(), customerResponse.getDateOfBirth());
+    }
+
+    @Test
+    void givenCustomer_whenFromCustomerToCustomerNotification_thenReturnCustomerNotification() {
+        Customer customer = Customer.builder()
+                .id(UUID.randomUUID().toString())
+                .securityNo(UUID.randomUUID().toString())
+                .firstName("George")
+                .lastName("Chair")
+                .dateOfBirth(LocalDate.of(1980, 11, 12))
+                .build();
+
+        CustomerNotification customerNotification = customerConverter.fromCustomerToCustomerNotification(customer);
+
+        assertEquals(customer.getId(), customerNotification.getId());
+        assertEquals(customer.getSecurityNo(), customerNotification.getSecurityNo());
+        assertEquals(customer.getFirstName(), customerNotification.getFirstName());
+        assertEquals(customer.getLastName(), customerNotification.getLastName());
     }
 }
