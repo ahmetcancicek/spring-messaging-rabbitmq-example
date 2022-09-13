@@ -1,7 +1,6 @@
 # Spring Messaging RabbitMQ Example
 
-The repository contains simple a modular-monolith development project to create example of using notification system
-with RabbitMQ. At the same time, there are some banking operation that use low-level locking system.
+The repository contains simple a modular-monolith development project to create an example of using a notification system with RabbitMQ. At the same time, there are some banking operations that use a low-level locking system.
 
 ## Development
 
