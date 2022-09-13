@@ -9,6 +9,8 @@ services:
       SPRING_RABBITMQ_HOST: rabbitmq
       MYSQL_PASSWORD: $MYSQL_ROOT_PASSWORD
     restart: on-failure
+    volumes:
+      - ./docs/ddl:/docker-entrypoint-initdb.d
     build:
       context: .
       dockerfile: Dockerfile
