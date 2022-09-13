@@ -27,7 +27,7 @@ public class CustomerServiceImpl implements CustomerService {
     public CustomerResponse createCustomer(CustomerRequest customerRequest) {
         log.info("Trying to create customer: [{}]", customerRequest.toString());
         if (existsBySecurityNo(customerRequest.getSecurityNo()))
-            throw new ResourceNotFoundException("Customer", "Security No", customerRequest.getSecurityNo());
+            throw new AlreadyExistsElementException("Customer", "Security No", customerRequest.getSecurityNo());
         Customer customer = customerConverter.toCustomerFromCustomerRequest(customerRequest);
         customer = customerRepository.save(customer);
         log.info("Customer saved to database: [{}]", customer);

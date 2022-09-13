@@ -1,15 +1,9 @@
 package com.example.gitbank.common.rest;
 
-import com.example.gitbank.common.exception.AccountRegistrationException;
-import com.example.gitbank.common.exception.AlreadyExistsElementException;
-import com.example.gitbank.common.exception.CustomerRegistrationException;
-import com.example.gitbank.common.exception.ResourceNotFoundException;
+import com.example.gitbank.common.exception.*;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
-import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
@@ -30,6 +24,24 @@ public class RestExceptionHandler extends BaseController {
     @ExceptionHandler(ResourceNotFoundException.class)
     public ApiResponse<ErrorResponse> handleResourceNotFoundException(ResourceNotFoundException exception) {
         return respond(new ErrorResponse(HttpStatus.NOT_FOUND.toString(), ""));
+    }
+
+    @ResponseStatus(HttpStatus.EXPECTATION_FAILED)
+    @ExceptionHandler(InsufficientErrorException.class)
+    public ApiResponse<ErrorResponse> handleInsufficientErrorException(InsufficientErrorException insufficientErrorException) {
+        return respond(new ErrorResponse(HttpStatus.EXPECTATION_FAILED.toString(), ""));
+    }
+
+    @ResponseStatus(HttpStatus.EXPECTATION_FAILED)
+    @ExceptionHandler(InsufficientMoneyTransferErrorException.class)
+    public ApiResponse<ErrorResponse> handleInsufficientMoneyTransferErrorException(InsufficientMoneyTransferErrorException insufficientMoneyTransferErrorException) {
+        return respond(new ErrorResponse(HttpStatus.EXPECTATION_FAILED.toString(), ""));
+    }
+
+    @ResponseStatus(HttpStatus.EXPECTATION_FAILED)
+    @ExceptionHandler(NotEqualCurrentException.class)
+    public ApiResponse<ErrorResponse> handleNotEqualCurrentException(NotEqualCurrentException notEqualCurrentException) {
+        return respond(new ErrorResponse(HttpStatus.EXPECTATION_FAILED.toString(), ""));
     }
 
     @ResponseStatus(HttpStatus.CONFLICT)
