@@ -3,10 +3,7 @@ package com.example.gitbank.account.model;
 import lombok.*;
 import org.hibernate.annotations.GenericGenerator;
 
-import javax.persistence.Column;
-import javax.persistence.Entity;
-import javax.persistence.GeneratedValue;
-import javax.persistence.Id;
+import javax.persistence.*;
 import java.math.BigDecimal;
 
 @Setter
@@ -30,5 +27,7 @@ public class Account {
     private String name;
     private String customerId;
     private BigDecimal balance;
+
+    @Enumerated(EnumType.STRING)
     private Currency currency;
 }
