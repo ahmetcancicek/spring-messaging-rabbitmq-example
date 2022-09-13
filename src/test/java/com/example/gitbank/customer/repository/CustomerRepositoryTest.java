@@ -3,6 +3,9 @@ package com.example.gitbank.customer.repository;
 import com.example.gitbank.customer.model.Customer;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.autoconfigure.jdbc.AutoConfigureTestDatabase;
+import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
+import org.springframework.boot.test.autoconfigure.orm.jpa.TestEntityManager;
 import org.springframework.test.context.jdbc.Sql;
 
 import java.time.LocalDate;
@@ -11,10 +14,14 @@ import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-
+@DataJpaTest
+@AutoConfigureTestDatabase(replace = AutoConfigureTestDatabase.Replace.NONE)
 @Sql(scripts = "classpath:sql/customer.sql", executionPhase = Sql.ExecutionPhase.BEFORE_TEST_METHOD)
 @Sql(scripts = "classpath:sql/cleanup.sql", executionPhase = Sql.ExecutionPhase.AFTER_TEST_METHOD)
-class CustomerRepositoryTest extends AbstractIT {
+class CustomerRepositoryTest {
+
+    @Autowired
+    protected TestEntityManager testEntityManager;
 
     @Autowired
     private CustomerRepository customerRepository;
@@ -59,5 +66,30 @@ class CustomerRepositoryTest extends AbstractIT {
 
         // then
         assertTrue(customer.isPresent());
+    }
+
+    @Test
+    public void givenExistingCustomer_whenExistsBySecurityNo_thenReturnTrue() {
+        // given
+        String securityNo = "b9823d94-ed64-4ec3-a500-9dae984dd524";
+
+        // when
+        Boolean result = customerRepository.existsBySecurityNo(securityNo);
+
+        // then
+        assertTrue(result);
+    }
+
+    @Test
+    public void givenExistingCustomer_whenExistsBySecurityNoAndIdNot_thenReturnFalse() {
+        // given
+        String securityNo = "b9823d94-ed64-4ec3-a500-9dae984dd524";
+        String id = "b9823d94-ed64-4ec3-a500-9dae984dd524";
+
+        // when
+        Boolean result = customerRepository.existsBySecurityNoAndIdNot(securityNo, id);
+
+        // then
+        assertFalse(result);
     }
 }
