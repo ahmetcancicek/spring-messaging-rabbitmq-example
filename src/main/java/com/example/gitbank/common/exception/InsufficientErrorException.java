@@ -6,14 +6,12 @@ import org.springframework.web.bind.annotation.ResponseStatus;
 @ResponseStatus(HttpStatus.INTERNAL_SERVER_ERROR)
 public class InsufficientErrorException extends RuntimeException {
     private final String fromAccount;
-    private final String toAccount;
 
     private final String message;
 
-    public InsufficientErrorException(String fromAccount, String toAccount, String message) {
-        super(String.format("Failed to transfer money from [%s] to [%s] : '%s'", fromAccount, toAccount, message));
+    public InsufficientErrorException(String fromAccount,String message) {
+        super(String.format("Failed to transfer money from [%s] : '%s'", fromAccount, message));
         this.fromAccount = fromAccount;
-        this.toAccount = toAccount;
         this.message = message;
     }
 }
