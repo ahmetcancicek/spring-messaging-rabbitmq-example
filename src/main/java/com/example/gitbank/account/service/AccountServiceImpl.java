@@ -144,7 +144,6 @@ public class AccountServiceImpl implements AccountService {
     public void transferMoney(MoneyTransferRequest moneyTransferRequest) {
         log.info("Trying to start money transfer operation: [{}]", moneyTransferRequest.toString());
         Lock lock = getLock(moneyTransferRequest.getFromId());
-        MoneyTransferResponse moneyTransferResponse;
         try {
             accountRepository.findById(moneyTransferRequest.getFromId()).map(fromAccount -> {
                         if (calculateWithdrawMoney(fromAccount.getBalance(), moneyTransferRequest.getAmount())) {
