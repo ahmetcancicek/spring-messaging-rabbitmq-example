@@ -6,7 +6,8 @@ services:
     container_name: gitbank_server
     environment:
       MYSQL_HOST: mysql
-      MYSQL_PASSWORD: $$MYSQL_ROOT_PASSWORD
+      SPRING_RABBITMQ_HOST: rabbitmq
+      MYSQL_PASSWORD: $MYSQL_ROOT_PASSWORD
     restart: on-failure
     build:
       context: .
