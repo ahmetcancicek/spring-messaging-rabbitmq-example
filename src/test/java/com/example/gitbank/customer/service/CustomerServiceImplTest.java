@@ -11,7 +11,6 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.springframework.context.ApplicationEventPublisher;
 
 import java.time.LocalDate;
 import java.util.Optional;
@@ -39,7 +38,7 @@ class CustomerServiceImplTest {
     @BeforeEach
     void setUp() {
         customerRepository = Mockito.mock(CustomerRepository.class);
-        customerConverter = Mockito.mock(CustomerConverter.class);
+        customerConverter = new CustomerConverter();
         customerNotificationService = Mockito.mock(CustomerNotificationServiceImpl.class);
         customerService = new CustomerServiceImpl(customerRepository, customerConverter, customerNotificationService);
     }
@@ -55,20 +54,6 @@ class CustomerServiceImplTest {
                 .dateOfBirth(LocalDate.of(1980, 11, 12))
                 .build();
 
-        CustomerResponse customerResponse = CustomerResponse.builder()
-                .id(customer.getId())
-                .firstName(customer.getFirstName())
-                .lastName(customer.getLastName())
-                .securityNo(customer.getSecurityNo())
-                .dateOfBirth(customer.getDateOfBirth())
-                .build();
-
-        given(customerConverter.toCustomerFromCustomerRequest(any())).willReturn(customer);
-        given(customerConverter.fromCustomerToCustomerResponse(any())).willReturn(customerResponse);
-        given(customerRepository.existsBySecurityNo(any())).willReturn(false);
-        given(customerRepository.save(any())).willReturn(customer);
-
-        // when
         CustomerRequest customerRequest = CustomerRequest.builder()
                 .firstName(customer.getFirstName())
                 .lastName(customer.getLastName())
@@ -76,13 +61,19 @@ class CustomerServiceImplTest {
                 .dateOfBirth(customer.getDateOfBirth())
                 .build();
 
+        given(customerRepository.existsBySecurityNo(any(String.class))).willReturn(false);
+        given(customerRepository.save(any(Customer.class))).willReturn(customer);
+
+        // when
         CustomerResponse expectedCustomerResponse = customerService.createCustomer(customerRequest);
 
         // then
-        assertEquals(customerResponse, expectedCustomerResponse);
-        verify(customerRepository, times(1)).save(any());
-        verify(customerConverter, times(1)).fromCustomerToCustomerResponse(any());
-        verify(customerConverter, times(1)).toCustomerFromCustomerRequest(any());
+        verify(customerRepository, times(1)).save(any(Customer.class));
+        assertEquals(customer.getId(), expectedCustomerResponse.getId());
+        assertEquals(customer.getSecurityNo(), expectedCustomerResponse.getSecurityNo());
+        assertEquals(customer.getFirstName(), expectedCustomerResponse.getFirstName());
+        assertEquals(customer.getLastName(), expectedCustomerResponse.getLastName());
+        assertEquals(customer.getDateOfBirth(), expectedCustomerResponse.getDateOfBirth());
     }
 
     @Test
@@ -96,7 +87,7 @@ class CustomerServiceImplTest {
                 .dateOfBirth(LocalDate.of(1980, 11, 12))
                 .build();
 
-        given(customerRepository.findById(any())).willReturn(Optional.ofNullable(customer));
+        given(customerRepository.findById(any(String.class))).willReturn(Optional.ofNullable(customer));
 
         // when
         Optional<Customer> expectedCustomer = customerService.findById(customer.getId());
@@ -122,7 +113,7 @@ class CustomerServiceImplTest {
                 .dateOfBirth(LocalDate.of(1980, 11, 12))
                 .build();
 
-        given(customerRepository.findBySecurityNo(any())).willReturn(Optional.ofNullable(customer));
+        given(customerRepository.findBySecurityNo(any(String.class))).willReturn(Optional.ofNullable(customer));
 
         // when
         Optional<Customer> expectedCustomer = customerService.findBySecurityNo(customer.getSecurityNo());
@@ -148,24 +139,20 @@ class CustomerServiceImplTest {
                 .dateOfBirth(LocalDate.of(1980, 11, 12))
                 .build();
 
-        CustomerResponse customerResponse = CustomerResponse.builder()
-                .id(customer.getId())
-                .firstName(customer.getFirstName())
-                .lastName(customer.getLastName())
-                .securityNo(customer.getSecurityNo())
-                .dateOfBirth(customer.getDateOfBirth())
-                .build();
 
-        given(customerConverter.fromCustomerToCustomerResponse(any())).willReturn(customerResponse);
-        given(customerRepository.findById(any())).willReturn(Optional.of(customer));
+        given(customerRepository.findById(any(String.class))).willReturn(Optional.of(customer));
 
         // when
         CustomerResponse expectedCustomerResponse = customerService.getCustomerById(customer.getId());
 
         // then
-        assertEquals(customerResponse, expectedCustomerResponse);
-        verify(customerRepository, times(1)).findById(any());
-        verify(customerConverter, times(1)).fromCustomerToCustomerResponse(any());
+        verify(customerRepository, times(1)).findById(any(String.class));
+        assertEquals(customer.getId(), expectedCustomerResponse.getId());
+        assertEquals(customer.getSecurityNo(), expectedCustomerResponse.getSecurityNo());
+        assertEquals(customer.getFirstName(), expectedCustomerResponse.getFirstName());
+        assertEquals(customer.getLastName(), expectedCustomerResponse.getLastName());
+        assertEquals(customer.getDateOfBirth(), expectedCustomerResponse.getDateOfBirth());
+
     }
 
     @Test
@@ -182,10 +169,35 @@ class CustomerServiceImplTest {
     @Test
     void givenExistingCustomer_whenUpdateCustomer_thenShouldReturnCustomer() {
         // given
+        Customer customer = Customer.builder()
+                .id(UUID.randomUUID().toString())
+                .firstName("George")
+                .lastName("Chair")
+                .securityNo(UUID.randomUUID().toString())
+                .dateOfBirth(LocalDate.of(1980, 11, 12))
+                .build();
+
+        CustomerRequest customerRequest = CustomerRequest.builder()
+                .firstName(customer.getFirstName())
+                .lastName(customer.getLastName())
+                .securityNo(customer.getSecurityNo())
+                .dateOfBirth(customer.getDateOfBirth())
+                .build();
+
+        given(customerRepository.findById(any(String.class))).willReturn(Optional.of(customer));
+        given(customerRepository.save(any(Customer.class))).willReturn(customer);
 
         // when
+        CustomerResponse expectedCustomerResponse = customerService.updateCustomer(customer.getId(), customerRequest);
 
         // then
+        verify(customerRepository, times(1)).findById(any(String.class));
+        verify(customerRepository, times(1)).save(any(Customer.class));
+        assertEquals(customer.getId(), expectedCustomerResponse.getId());
+        assertEquals(customer.getSecurityNo(), expectedCustomerResponse.getSecurityNo());
+        assertEquals(customer.getFirstName(), expectedCustomerResponse.getFirstName());
+        assertEquals(customer.getLastName(), expectedCustomerResponse.getLastName());
+        assertEquals(customer.getDateOfBirth(), expectedCustomerResponse.getDateOfBirth());
     }
 
     @Test

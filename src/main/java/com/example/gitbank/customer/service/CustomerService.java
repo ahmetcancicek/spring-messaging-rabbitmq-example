@@ -15,6 +15,8 @@ public interface CustomerService {
 
     CustomerResponse getCustomerById(String id);
 
+    Boolean existsBySecurityNoAndIdNot(String securityNo, String id);
+
     CustomerResponse updateCustomer(String id, CustomerRequest customerRequest);
 
     void deleteCustomer(String id);

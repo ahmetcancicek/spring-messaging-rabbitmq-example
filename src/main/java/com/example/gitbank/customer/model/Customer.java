@@ -6,7 +6,6 @@ import org.hibernate.annotations.GenericGenerator;
 
 import javax.persistence.*;
 import java.time.LocalDate;
-import java.util.Date;
 
 
 @Setter
@@ -32,8 +31,6 @@ public class Customer {
     private String securityNo;
 
     private String firstName;
-
     private String lastName;
-
     private LocalDate dateOfBirth;
 }

@@ -1,5 +1,6 @@
 package com.example.gitbank.customer.service;
 
+import com.example.gitbank.common.exception.AlreadyExistsElementException;
 import com.example.gitbank.common.exception.ResourceNotFoundException;
 import com.example.gitbank.customer.converter.CustomerConverter;
 import com.example.gitbank.customer.dto.CustomerRequest;
@@ -28,7 +29,7 @@ public class CustomerServiceImpl implements CustomerService {
         if (existsBySecurityNo(customerRequest.getSecurityNo()))
             throw new ResourceNotFoundException("Customer", "Security No", customerRequest.getSecurityNo());
         Customer customer = customerConverter.toCustomerFromCustomerRequest(customerRequest);
-        customerRepository.save(customer);
+        customer = customerRepository.save(customer);
         log.info("Customer saved to database: [{}]", customer);
         customerNotificationService.sendToQueue(customer);
         return customerConverter.fromCustomerToCustomerResponse(customer);
@@ -52,10 +53,22 @@ public class CustomerServiceImpl implements CustomerService {
                 .orElseThrow(() -> new ResourceNotFoundException("Customer", "id", id));
     }
 
+    public Boolean existsBySecurityNoAndIdNot(String securityNo, String id) {
+        return customerRepository.existsBySecurityNoAndIdNot(securityNo, id);
+    }
+
+    @Transactional
     @Override
     public CustomerResponse updateCustomer(String id, CustomerRequest customerRequest) {
-        // TODO: Implement the method to update customer from db
-        return null;
+        return customerRepository.findById(id).map(customer -> {
+                    if (existsBySecurityNoAndIdNot(customerRequest.getSecurityNo(), id))
+                        throw new AlreadyExistsElementException("Customer", "securityNo", customerRequest.getSecurityNo());
+                    customer = customerConverter.toCustomerFromCustomerRequest(customerRequest);
+                    customer.setId(id);
+                    customerRepository.save(customer);
+                    return customer;
+                }).map(customerConverter::fromCustomerToCustomerResponse)
+                .orElseThrow(() -> new ResourceNotFoundException("Customer", "id", id));
     }
 
     @Override

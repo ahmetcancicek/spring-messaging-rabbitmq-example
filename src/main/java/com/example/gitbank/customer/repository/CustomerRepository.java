@@ -15,4 +15,6 @@ public interface CustomerRepository extends JpaRepository<Customer, String> {
     Optional<Customer> findById(String id);
 
     Boolean existsBySecurityNo(String securityNo);
+
+    Boolean existsBySecurityNoAndIdNot(String securityNo, String id);
 }
