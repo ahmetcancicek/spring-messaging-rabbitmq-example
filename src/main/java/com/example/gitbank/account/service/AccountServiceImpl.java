@@ -147,9 +147,12 @@ public class AccountServiceImpl implements AccountService {
         try {
             accountRepository.findById(moneyTransferRequest.getFromId()).map(fromAccount -> {
                         if (calculateWithdrawMoney(fromAccount.getBalance(), moneyTransferRequest.getAmount())) {
-                            fromAccount.getBalance().subtract(moneyTransferRequest.getAmount());
+                            fromAccount.setBalance(fromAccount.getBalance().subtract(moneyTransferRequest.getAmount()));
+
                             accountRepository.findById(moneyTransferRequest.getToId()).map(toAccount -> {
-                                toAccount.setBalance(moneyTransferRequest.getAmount());
+                                toAccount.setBalance(toAccount.getBalance().add(moneyTransferRequest.getAmount()));
+                                accountRepository.save(fromAccount);
+                                accountRepository.save(toAccount);
                                 return toAccount;
                             }).orElseThrow(() -> new ResourceNotFoundException("Account", "id", moneyTransferRequest.getToId()));
                         }
