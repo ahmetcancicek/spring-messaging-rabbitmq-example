@@ -1,9 +1,6 @@
 package com.example.gitbank.account.controller;
 
-import com.example.gitbank.account.dto.AccountRequest;
-import com.example.gitbank.account.dto.AccountResponse;
-import com.example.gitbank.account.dto.DepositMoneyRequest;
-import com.example.gitbank.account.dto.WithdrawMoneyRequest;
+import com.example.gitbank.account.dto.*;
 import com.example.gitbank.account.model.Currency;
 import com.example.gitbank.account.service.AccountServiceImpl;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -43,7 +40,7 @@ class AccountControllerTest {
     private ApplicationEventPublisher applicationEventPublisher;
 
     @Test
-    void whenIsValidAccount_whenCreateAccount_thenReturnAccount() throws Exception {
+    void givenIsValidAccount_whenCreateAccount_thenReturnAccount() throws Exception {
         // given
         AccountResponse accountResponse = AccountResponse.builder()
                 .id(UUID.randomUUID().toString())
@@ -53,9 +50,6 @@ class AccountControllerTest {
                 .balance(BigDecimal.TEN)
                 .build();
 
-        given(accountService.createAccount(any())).willReturn(accountResponse);
-
-        // when
         AccountRequest accountRequest = AccountRequest.builder()
                 .customerId(UUID.randomUUID().toString())
                 .currency(Currency.USD)
@@ -63,6 +57,9 @@ class AccountControllerTest {
                 .balance(BigDecimal.TEN)
                 .build();
 
+        given(accountService.createAccount(any(AccountRequest.class))).willReturn(accountResponse);
+
+        // when
         MockHttpServletRequestBuilder mockRequest = MockMvcRequestBuilders.post("/api/v1/accounts")
                 .contentType(MediaType.APPLICATION_JSON)
                 .accept(MediaType.APPLICATION_JSON)
@@ -80,7 +77,7 @@ class AccountControllerTest {
     }
 
     @Test
-    void whenExistingAccount_whenGetAccount_thenReturnAccount() throws Exception {
+    void givenExistingAccount_whenGetAccount_thenReturnAccount() throws Exception {
         // given
         AccountResponse accountResponse = AccountResponse.builder()
                 .id(UUID.randomUUID().toString())
@@ -109,7 +106,7 @@ class AccountControllerTest {
     }
 
     @Test
-    void whenExistingAccountAndSufficientBalance_whenWithdrawMoney_thenReturnAccountWithNewBalance() throws Exception {
+    void givenExistingAccountAndSufficientBalance_whenWithdrawMoney_thenReturnAccountWithNewBalance() throws Exception {
         // given
         AccountResponse accountResponse = AccountResponse.builder()
                 .id(UUID.randomUUID().toString())
@@ -119,14 +116,14 @@ class AccountControllerTest {
                 .balance(BigDecimal.TEN)
                 .build();
 
-        given(accountService.withdrawMoney(any())).willReturn(accountResponse);
-
-        // when
         WithdrawMoneyRequest withdrawMoneyRequest = WithdrawMoneyRequest.builder()
                 .fromId(accountResponse.getId())
                 .amount(BigDecimal.ONE)
                 .build();
 
+        given(accountService.withdrawMoney(any(WithdrawMoneyRequest.class))).willReturn(accountResponse);
+
+        // when
         MockHttpServletRequestBuilder mockRequest = MockMvcRequestBuilders.put("/api/v1/accounts/withdraw")
                 .accept(MediaType.APPLICATION_JSON)
                 .contentType(MediaType.APPLICATION_JSON)
@@ -143,7 +140,7 @@ class AccountControllerTest {
     }
 
     @Test
-    void whenExistingAccount_whenDepositMonet_thenReturnAccountWithNewBalance() throws Exception {
+    void givenExistingAccount_whenDepositMoney_thenReturnAccountWithNewBalance() throws Exception {
         // given
         AccountResponse accountResponse = AccountResponse.builder()
                 .id(UUID.randomUUID().toString())
@@ -153,14 +150,14 @@ class AccountControllerTest {
                 .balance(BigDecimal.TEN)
                 .build();
 
-        given(accountService.depositMoney(any())).willReturn(accountResponse);
-
-        // when
         DepositMoneyRequest withdrawMoneyRequest = DepositMoneyRequest.builder()
                 .toId(accountResponse.getId())
                 .amount(BigDecimal.ONE)
                 .build();
 
+        given(accountService.depositMoney(any(DepositMoneyRequest.class))).willReturn(accountResponse);
+
+        // when
         MockHttpServletRequestBuilder mockRequest = MockMvcRequestBuilders.put("/api/v1/accounts/deposit")
                 .accept(MediaType.APPLICATION_JSON)
                 .contentType(MediaType.APPLICATION_JSON)
@@ -174,5 +171,41 @@ class AccountControllerTest {
                 .andExpect(jsonPath("$.data.balance").value(accountResponse.getBalance()))
                 .andExpect(jsonPath("$.data.customerId").value(accountResponse.getCustomerId()))
                 .andExpect(jsonPath("$.data.currency").value(accountResponse.getCurrency().toString()));
+    }
+
+    @Test
+    void givenExistingAccount_whenTransferMoney_thenReturnTransactionResult() throws Exception {
+        // given
+        MoneyTransferResponse moneyTransferResponse = MoneyTransferResponse.builder()
+                .fromCustomerId(UUID.randomUUID().toString())
+                .fromCustomerId(UUID.randomUUID().toString())
+                .toAccountId(UUID.randomUUID().toString())
+                .toCustomerId(UUID.randomUUID().toString())
+                .amount(BigDecimal.TEN)
+                .build();
+
+        MoneyTransferRequest moneyTransferRequest = MoneyTransferRequest.builder()
+                .fromId(UUID.randomUUID().toString())
+                .toId(UUID.randomUUID().toString())
+                .amount(BigDecimal.TEN)
+                .build();
+
+        given(accountService.transferMoney(any(MoneyTransferRequest.class))).willReturn(moneyTransferResponse);
+
+        // when
+        MockHttpServletRequestBuilder mockRequest = MockMvcRequestBuilders.put("/api/v1/accounts/transfer")
+                .accept(MediaType.APPLICATION_JSON)
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(mapper.writeValueAsBytes(moneyTransferRequest));
+
+        // then
+        mockMvc.perform(mockRequest)
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.fromAccountId").value(moneyTransferResponse.getFromAccountId()))
+                .andExpect(jsonPath("$.data.fromCustomerId").value(moneyTransferResponse.getFromCustomerId()))
+                .andExpect(jsonPath("$.data.toAccountId").value(moneyTransferResponse.getToAccountId()))
+                .andExpect(jsonPath("$.data.toCustomerId").value(moneyTransferResponse.getToCustomerId()))
+                .andExpect(jsonPath("$.data.amount").value(moneyTransferResponse.getAmount()));
+
     }
 }

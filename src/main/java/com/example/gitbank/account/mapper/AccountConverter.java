@@ -33,8 +33,8 @@ public class AccountConverter {
                 .id(account.getId())
                 .name(account.getName())
                 .customerId(account.getCustomerId())
-                .balance(account.getBalance())
                 .currency(account.getCurrency())
+                .balance(account.getBalance())
                 .build();
     }
 }

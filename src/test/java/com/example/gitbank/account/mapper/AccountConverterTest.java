@@ -28,7 +28,6 @@ class AccountConverterTest {
     @Test
     void givenAccountRequest_whenToAccount_thenReturnAccount() {
         AccountRequest accountRequest = AccountRequest.builder()
-                .securityNo(UUID.randomUUID().toString())
                 .name("My Debit Account")
                 .balance(BigDecimal.ONE)
                 .currency(Currency.USD)

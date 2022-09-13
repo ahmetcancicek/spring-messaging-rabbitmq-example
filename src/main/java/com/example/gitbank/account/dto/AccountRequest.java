@@ -7,6 +7,8 @@ import lombok.Setter;
 import lombok.ToString;
 
 import javax.validation.constraints.NotBlank;
+import javax.validation.constraints.Positive;
+import javax.validation.constraints.Size;
 import java.math.BigDecimal;
 
 
@@ -17,17 +19,19 @@ import java.math.BigDecimal;
 public class AccountRequest {
 
     @NotBlank
+    @Size(max = 255)
     private String customerId;
 
     @NotBlank
-    private String securityNo;
-
-    @NotBlank
+    @Size(max = 255)
     private String name;
 
+    @Positive
+    @Size(max = 9)
     @Builder.Default
     private BigDecimal balance = BigDecimal.ZERO;
 
     @NotBlank
+    @Size(max = 3)
     private Currency currency;
 }

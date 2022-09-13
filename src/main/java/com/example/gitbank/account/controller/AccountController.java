@@ -26,12 +26,6 @@ public class AccountController extends BaseController {
         return respond(accountResponse);
     }
 
-    @PutMapping("/transfer")
-    public ApiResponse<String> transferMoney(@RequestBody MoneyTransferRequest moneyTransferRequest) {
-        accountService.transferMoney(moneyTransferRequest);
-        return respond("Transfer operation starts successfully");
-    }
-
     @PutMapping("/withdraw")
     public ApiResponse<AccountResponse> withdrawMoney(@RequestBody WithdrawMoneyRequest withdrawMoneyRequest) {
         AccountResponse accountResponse = accountService.withdrawMoney(withdrawMoneyRequest);
@@ -42,5 +36,11 @@ public class AccountController extends BaseController {
     public ApiResponse<AccountResponse> depositMoney(@RequestBody DepositMoneyRequest depositMoneyRequest) {
         AccountResponse accountResponse = accountService.depositMoney(depositMoneyRequest);
         return respond(accountResponse);
+    }
+
+    @PutMapping("/transfer")
+    public ApiResponse<MoneyTransferResponse> transferMoney(@RequestBody MoneyTransferRequest moneyTransferRequest) {
+        MoneyTransferResponse moneyTransferResponse = accountService.transferMoney(moneyTransferRequest);
+        return respond(moneyTransferResponse);
     }
 }

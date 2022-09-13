@@ -1,9 +1,12 @@
 package com.example.gitbank.account.service;
 
 import com.example.gitbank.account.dto.*;
+import com.example.gitbank.common.exception.InsufficientErrorException;
+import com.example.gitbank.common.exception.InsufficientMoneyTransferErrorException;
 import com.example.gitbank.account.mapper.AccountConverter;
 import com.example.gitbank.account.repository.AccountRepository;
 import com.example.gitbank.account.model.Account;
+import com.example.gitbank.common.exception.NotEqualCurrentException;
 import com.example.gitbank.common.exception.ResourceNotFoundException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -12,6 +15,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.util.HashMap;
+import java.util.Optional;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 
@@ -34,7 +38,9 @@ public class AccountServiceImpl implements AccountService {
     }
 
     private final AccountRepository accountRepository;
+
     private final AccountConverter accountConverter;
+
 
     private final AccountNotificationService accountNotificationService;
 
@@ -43,12 +49,13 @@ public class AccountServiceImpl implements AccountService {
     public AccountResponse createAccount(AccountRequest accountRequest) {
         log.info("Trying to create a new account: [{}]", accountRequest.toString());
         Account account = accountConverter.toAccountFromAccountRequest(accountRequest);
-        accountRepository.save(account);
+        account = accountRepository.save(account);
         log.info("Account saved to database: [{}]", account);
         accountNotificationService.sendNotificationForCreatedAccount(account);
         return accountConverter.fromAccountToAccountResponse(account);
     }
 
+    @Transactional
     @Override
     public AccountResponse updateAccount(String id, AccountRequest accountRequest) {
         Lock lock = getLock(id);
@@ -56,9 +63,9 @@ public class AccountServiceImpl implements AccountService {
             lock.lock();
             log.info("Trying to update account: [{}]", accountRequest.toString());
             return accountRepository.findById(id).map(account -> {
-                        account.setBalance(accountRequest.getBalance());
+                        account.setName(accountRequest.getName());
                         account.setCurrency(accountRequest.getCurrency());
-                        account.setCustomerId(accountRequest.getCustomerId());
+                        account.setBalance(accountRequest.getBalance());
                         accountRepository.save(account);
                         log.info("Account saved to database: [{}]", account);
                         return account;
@@ -68,6 +75,11 @@ public class AccountServiceImpl implements AccountService {
         } finally {
             lock.unlock();
         }
+    }
+
+    @Override
+    public Optional<Account> findById(String id) {
+        return accountRepository.findById(id);
     }
 
     @Override
@@ -94,8 +106,10 @@ public class AccountServiceImpl implements AccountService {
                             account.setBalance(account.getBalance().subtract(amount));
                             accountRepository.save(account);
                             log.info("Withdraw money from account and saved to database: [{}]", account.toString());
-                        } else
+                        } else {
                             log.info("Insufficient balance -> accountId: [{}] balance: [{}] amount:[{}]", account.getId(), account.getBalance(), amount);
+                            throw new InsufficientErrorException(account.getId(), "Insufficient balance");
+                        }
                         return account;
                     }).map(accountConverter::fromAccountToAccountResponse)
                     .orElseThrow(() -> new ResourceNotFoundException("Account", "id", id));
@@ -140,26 +154,39 @@ public class AccountServiceImpl implements AccountService {
         return depositMoney(depositMoneyRequest.getToId(), depositMoneyRequest.getAmount());
     }
 
+    @Transactional
     @Override
-    public void transferMoney(MoneyTransferRequest moneyTransferRequest) {
+    public MoneyTransferResponse transferMoney(MoneyTransferRequest moneyTransferRequest) {
         log.info("Trying to start money transfer operation: [{}]", moneyTransferRequest.toString());
         Lock lock = getLock(moneyTransferRequest.getFromId());
         try {
-            accountRepository.findById(moneyTransferRequest.getFromId()).map(fromAccount -> {
-                        if (calculateWithdrawMoney(fromAccount.getBalance(), moneyTransferRequest.getAmount())) {
-                            fromAccount.setBalance(fromAccount.getBalance().subtract(moneyTransferRequest.getAmount()));
-
-                            accountRepository.findById(moneyTransferRequest.getToId()).map(toAccount -> {
-                                toAccount.setBalance(toAccount.getBalance().add(moneyTransferRequest.getAmount()));
-                                accountRepository.save(fromAccount);
-                                accountRepository.save(toAccount);
-                                return toAccount;
-                            }).orElseThrow(() -> new ResourceNotFoundException("Account", "id", moneyTransferRequest.getToId()));
-                        }
-                        return fromAccount;
-                    })
-                    .orElseThrow(() -> new ResourceNotFoundException("Account", "id", moneyTransferRequest.getFromId()));
             lock.lock();
+            // TODO: Refactor the method to do more clean than
+            Account sourceAccount = accountRepository.findById(moneyTransferRequest.getFromId())
+                    .orElseThrow(() -> new ResourceNotFoundException("Account", "id", moneyTransferRequest.getToId()));
+
+            Account targetAccount = accountRepository.findById(moneyTransferRequest.getToId())
+                    .orElseThrow(() -> new ResourceNotFoundException("Account", "id", moneyTransferRequest.getFromId()));
+
+            if (!calculateWithdrawMoney(sourceAccount.getBalance(), moneyTransferRequest.getAmount()))
+                throw new InsufficientMoneyTransferErrorException(sourceAccount.getId(), targetAccount.getId(), "Insufficient balance");
+
+            if (sourceAccount.getCurrency() != targetAccount.getCurrency())
+                throw new NotEqualCurrentException(sourceAccount.getCurrency().name(), targetAccount.getCurrency().name(), "Not equals currency");
+
+            targetAccount.setBalance(targetAccount.getBalance().subtract(moneyTransferRequest.getAmount()));
+            sourceAccount.setBalance(sourceAccount.getBalance().add(moneyTransferRequest.getAmount()));
+            accountRepository.save(targetAccount);
+            accountRepository.save(sourceAccount);
+            log.info("Transferred money [{} {}] from [{}] to [{}]", moneyTransferRequest.getAmount(), sourceAccount.getCurrency(), sourceAccount.getId(), targetAccount.getId());
+
+            return MoneyTransferResponse.builder()
+                    .fromAccountId(sourceAccount.getId())
+                    .fromCustomerId(sourceAccount.getCustomerId())
+                    .toAccountId(targetAccount.getId())
+                    .toCustomerId(targetAccount.getCustomerId())
+                    .amount(moneyTransferRequest.getAmount())
+                    .build();
         } finally {
             lock.unlock();
         }

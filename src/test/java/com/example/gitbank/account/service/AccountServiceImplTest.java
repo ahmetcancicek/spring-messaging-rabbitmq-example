@@ -2,10 +2,15 @@ package com.example.gitbank.account.service;
 
 import com.example.gitbank.account.dto.AccountRequest;
 import com.example.gitbank.account.dto.AccountResponse;
+import com.example.gitbank.account.dto.MoneyTransferRequest;
+import com.example.gitbank.account.dto.MoneyTransferResponse;
 import com.example.gitbank.account.mapper.AccountConverter;
 import com.example.gitbank.account.model.Account;
 import com.example.gitbank.account.model.Currency;
 import com.example.gitbank.account.repository.AccountRepository;
+import com.example.gitbank.common.exception.InsufficientErrorException;
+import com.example.gitbank.common.exception.InsufficientMoneyTransferErrorException;
+import com.example.gitbank.common.exception.NotEqualCurrentException;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -16,6 +21,8 @@ import java.math.BigDecimal;
 import java.util.Optional;
 import java.util.UUID;
 
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.catchThrowable;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
@@ -50,7 +57,6 @@ class AccountServiceImplTest {
 
         AccountRequest accountRequest = AccountRequest.builder()
                 .customerId(account.getCustomerId())
-                .securityNo(UUID.randomUUID().toString())
                 .currency(account.getCurrency())
                 .name("My Debit Account")
                 .balance(account.getBalance())
@@ -63,6 +69,7 @@ class AccountServiceImplTest {
 
         // then
         verify(accountRepository, times(1)).save(any());
+        assertEquals(account.getId(), expectedAccountResponse.getId());
         assertEquals(account.getName(), expectedAccountResponse.getName());
         assertEquals(account.getCurrency(), expectedAccountResponse.getCurrency());
         assertEquals(account.getBalance(), expectedAccountResponse.getBalance());
@@ -98,6 +105,27 @@ class AccountServiceImplTest {
         assertEquals(account.getCurrency(), expectedAccountResponse.getCurrency());
         assertEquals(account.getBalance(), expectedAccountResponse.getBalance());
         assertEquals(account.getCustomerId(), expectedAccountResponse.getCustomerId());
+    }
+
+    @Test
+    void givenExistingAccount_whenFindById_thenReturnAccount() {
+        // given
+        Account account = Account.builder()
+                .id(UUID.randomUUID().toString())
+                .customerId(UUID.randomUUID().toString())
+                .currency(Currency.USD)
+                .name("My Debit Account")
+                .balance(BigDecimal.TEN)
+                .build();
+
+        given(accountRepository.findById(any(String.class))).willReturn(Optional.ofNullable(account));
+
+        // when
+        Optional<Account> expectedAccount = accountService.findById(account.getId());
+
+        // then
+        verify(accountRepository, times(1)).findById(any());
+        assertTrue(expectedAccount.isPresent());
     }
 
     @Test
@@ -152,7 +180,7 @@ class AccountServiceImplTest {
     }
 
     @Test
-    void givenExistingAccountAndNotSufficientBalance_whenWithdrawMoney_thenReturnAccount() {
+    void givenExistingAccountAndNotSufficientBalance_whenWithdrawMoney_thenThrowException() {
         // given
         Account account = Account.builder()
                 .id(UUID.randomUUID().toString())
@@ -165,16 +193,11 @@ class AccountServiceImplTest {
         given(accountRepository.findById(any(String.class))).willReturn(Optional.ofNullable(account));
 
         // when
-        AccountResponse expectedAccountResponse = accountService.withdrawMoney(account.getId(), new BigDecimal(100));
+        Throwable throwable = catchThrowable(() -> {
+            accountService.withdrawMoney(account.getId(), new BigDecimal(100));
+        });
 
-        // then
-        verify(accountRepository, times(0)).save(any());
-        verify(accountRepository, times(1)).findById(any());
-        assertEquals(account.getBalance(), new BigDecimal(10));
-        assertEquals(account.getName(), expectedAccountResponse.getName());
-        assertEquals(account.getCurrency(), expectedAccountResponse.getCurrency());
-        assertEquals(account.getBalance(), expectedAccountResponse.getBalance());
-        assertEquals(account.getCustomerId(), expectedAccountResponse.getCustomerId());
+        assertThat(throwable).isInstanceOf(InsufficientErrorException.class);
     }
 
     @Test
@@ -182,13 +205,6 @@ class AccountServiceImplTest {
         // given
         Account account = Account.builder()
                 .id(UUID.randomUUID().toString())
-                .customerId(UUID.randomUUID().toString())
-                .currency(Currency.USD)
-                .name("My Debit Account")
-                .balance(BigDecimal.TEN)
-                .build();
-
-        AccountRequest accountRequest = AccountRequest.builder()
                 .customerId(UUID.randomUUID().toString())
                 .currency(Currency.USD)
                 .name("My Debit Account")
@@ -209,6 +225,119 @@ class AccountServiceImplTest {
         assertEquals(account.getCurrency(), expectedAccountResponse.getCurrency());
         assertEquals(account.getBalance(), expectedAccountResponse.getBalance());
         assertEquals(account.getCustomerId(), expectedAccountResponse.getCustomerId());
+    }
+
+    @Test
+    void givenExistingSourceAndTargetAccount_whenTransferMoney_thenReturnTransfer() {
+        // given
+        Account sourceAccount = Account.builder()
+                .id(UUID.randomUUID().toString())
+                .customerId(UUID.randomUUID().toString())
+                .currency(Currency.USD)
+                .name("My Debit Account")
+                .balance(BigDecimal.TEN)
+                .build();
+
+        Account targetAccount = Account.builder()
+                .id(UUID.randomUUID().toString())
+                .customerId(UUID.randomUUID().toString())
+                .currency(Currency.USD)
+                .name("My Debit Account")
+                .balance(BigDecimal.TEN)
+                .build();
+
+        given(accountRepository.findById(sourceAccount.getId())).willReturn(Optional.of(sourceAccount));
+        given(accountRepository.findById(targetAccount.getId())).willReturn(Optional.of(targetAccount));
+
+        MoneyTransferRequest moneyTransferRequest = MoneyTransferRequest.builder()
+                .fromId(sourceAccount.getId())
+                .toId(targetAccount.getId())
+                .amount(BigDecimal.ONE)
+                .build();
+
+        // when
+        MoneyTransferResponse moneyTransferResponse = accountService.transferMoney(moneyTransferRequest);
+
+        // then
+        assertEquals(sourceAccount.getId(), moneyTransferResponse.getFromAccountId());
+        assertEquals(sourceAccount.getCustomerId(), moneyTransferResponse.getFromCustomerId());
+        assertEquals(targetAccount.getId(), moneyTransferResponse.getToAccountId());
+        assertEquals(targetAccount.getCustomerId(), moneyTransferResponse.getToCustomerId());
+        assertEquals(moneyTransferRequest.getAmount(), moneyTransferResponse.getAmount());
+    }
+
+    @Test
+    void givenAccountWithDifferentCurrency_whenTransferMoney_thenThrowException() {
+        // given
+        Account sourceAccount = Account.builder()
+                .id(UUID.randomUUID().toString())
+                .customerId(UUID.randomUUID().toString())
+                .currency(Currency.USD)
+                .name("My Debit Account")
+                .balance(BigDecimal.TEN)
+                .build();
+
+        Account targetAccount = Account.builder()
+                .id(UUID.randomUUID().toString())
+                .customerId(UUID.randomUUID().toString())
+                .currency(Currency.EUR)
+                .name("My Debit Account")
+                .balance(BigDecimal.TEN)
+                .build();
+
+        given(accountRepository.findById(sourceAccount.getId())).willReturn(Optional.of(sourceAccount));
+        given(accountRepository.findById(targetAccount.getId())).willReturn(Optional.of(targetAccount));
+
+        MoneyTransferRequest moneyTransferRequest = MoneyTransferRequest.builder()
+                .fromId(sourceAccount.getId())
+                .toId(targetAccount.getId())
+                .amount(BigDecimal.ONE)
+                .build();
+
+        // when
+        Throwable throwable = catchThrowable(() -> {
+            accountService.transferMoney(moneyTransferRequest);
+        });
+
+        // then
+        assertThat(throwable).isInstanceOf(NotEqualCurrentException.class);
+    }
+
+    @Test
+    void givenExistingSourceAndTargetAccountWithInsufficientBalance_whenTransferMoney_thenReturnTransfer() {
+        // given
+        Account sourceAccount = Account.builder()
+                .id(UUID.randomUUID().toString())
+                .customerId(UUID.randomUUID().toString())
+                .currency(Currency.USD)
+                .name("My Debit Account")
+                .balance(BigDecimal.ONE)
+                .build();
+
+        Account targetAccount = Account.builder()
+                .id(UUID.randomUUID().toString())
+                .customerId(UUID.randomUUID().toString())
+                .currency(Currency.USD)
+                .name("My Debit Account")
+                .balance(BigDecimal.TEN)
+                .build();
+
+        given(accountRepository.findById(sourceAccount.getId())).willReturn(Optional.of(sourceAccount));
+        given(accountRepository.findById(targetAccount.getId())).willReturn(Optional.of(targetAccount));
+
+        MoneyTransferRequest moneyTransferRequest = MoneyTransferRequest.builder()
+                .fromId(sourceAccount.getId())
+                .toId(targetAccount.getId())
+                .amount(BigDecimal.TEN)
+                .build();
+
+        // when
+        Throwable throwable = catchThrowable(() -> {
+            accountService.transferMoney(moneyTransferRequest);
+        });
+
+        // then
+        assertThat(throwable).isInstanceOf(InsufficientMoneyTransferErrorException.class);
     }
 
     @Test
