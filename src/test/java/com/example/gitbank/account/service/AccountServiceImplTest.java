@@ -197,6 +197,7 @@ class AccountServiceImplTest {
             accountService.withdrawMoney(account.getId(), new BigDecimal(100));
         });
 
+        verify(accountRepository, times(1)).findById(any());
         assertThat(throwable).isInstanceOf(InsufficientErrorException.class);
     }
 
@@ -259,6 +260,7 @@ class AccountServiceImplTest {
         MoneyTransferResponse moneyTransferResponse = accountService.transferMoney(moneyTransferRequest);
 
         // then
+        verify(accountRepository, times(2)).findById(any());
         assertEquals(sourceAccount.getId(), moneyTransferResponse.getFromAccountId());
         assertEquals(sourceAccount.getCustomerId(), moneyTransferResponse.getFromCustomerId());
         assertEquals(targetAccount.getId(), moneyTransferResponse.getToAccountId());
@@ -300,6 +302,7 @@ class AccountServiceImplTest {
         });
 
         // then
+        verify(accountRepository, times(2)).findById(any());
         assertThat(throwable).isInstanceOf(NotEqualCurrentException.class);
     }
 
@@ -337,6 +340,7 @@ class AccountServiceImplTest {
         });
 
         // then
+        verify(accountRepository, times(2)).findById(any());
         assertThat(throwable).isInstanceOf(InsufficientMoneyTransferErrorException.class);
     }
 

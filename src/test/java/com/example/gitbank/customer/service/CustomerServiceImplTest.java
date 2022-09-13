@@ -1,5 +1,6 @@
 package com.example.gitbank.customer.service;
 
+import com.example.gitbank.common.exception.AlreadyExistsElementException;
 import com.example.gitbank.common.exception.ResourceNotFoundException;
 import com.example.gitbank.customer.converter.CustomerConverter;
 import com.example.gitbank.customer.dto.CustomerRequest;
@@ -44,7 +45,7 @@ class CustomerServiceImplTest {
     }
 
     @Test
-    void givenValidRequest_whenSaveCustomer_thenShouldReturnCustomer() {
+    void givenValidCustomerRequest_whenCreateCustomer_thenShouldReturnCustomer() {
         // given
         Customer customer = Customer.builder()
                 .id(UUID.randomUUID().toString())
@@ -77,6 +78,36 @@ class CustomerServiceImplTest {
     }
 
     @Test
+    void givenValidCustomerRequest_whenCreateCustomer_thenThrowException() {
+        // given
+        Customer customer = Customer.builder()
+                .id(UUID.randomUUID().toString())
+                .firstName("George")
+                .lastName("Chair")
+                .securityNo(UUID.randomUUID().toString())
+                .dateOfBirth(LocalDate.of(1980, 11, 12))
+                .build();
+
+        CustomerRequest customerRequest = CustomerRequest.builder()
+                .firstName(customer.getFirstName())
+                .lastName(customer.getLastName())
+                .securityNo(customer.getSecurityNo())
+                .dateOfBirth(customer.getDateOfBirth())
+                .build();
+
+        given(customerRepository.existsBySecurityNo(any(String.class))).willReturn(true);
+
+        // when
+        Throwable throwable = catchThrowable(() -> {
+            customerService.createCustomer(customerRequest);
+        });
+
+        // then
+        assertThat(throwable).isInstanceOf(ResourceNotFoundException.class);
+
+    }
+
+    @Test
     void givenExistingById_whenFindById_thenReturnCustomer() {
         // given
         Customer customer = Customer.builder()
@@ -100,6 +131,27 @@ class CustomerServiceImplTest {
         assertEquals(customer.getFirstName(), expectedCustomer.get().getFirstName());
         assertEquals(customer.getLastName(), expectedCustomer.get().getLastName());
         assertEquals(customer.getId(), expectedCustomer.get().getId());
+    }
+
+    @Test
+    void givenExistingById_wheExistsBySecurityNo_thenReturnTrue() {
+        // given
+        Customer customer = Customer.builder()
+                .id(UUID.randomUUID().toString())
+                .firstName("George")
+                .lastName("Chair")
+                .securityNo(UUID.randomUUID().toString())
+                .dateOfBirth(LocalDate.of(1980, 11, 12))
+                .build();
+
+        given(customerRepository.existsBySecurityNo(any(String.class))).willReturn(true);
+
+        // when
+        Boolean result = customerService.existsBySecurityNo(customer.getId());
+
+        // then
+        verify(customerRepository, times(1)).existsBySecurityNo(any());
+        assertTrue(result);
     }
 
     @Test
@@ -152,8 +204,34 @@ class CustomerServiceImplTest {
         assertEquals(customer.getFirstName(), expectedCustomerResponse.getFirstName());
         assertEquals(customer.getLastName(), expectedCustomerResponse.getLastName());
         assertEquals(customer.getDateOfBirth(), expectedCustomerResponse.getDateOfBirth());
-
     }
+
+    @Test
+    void givenExistingById_wheExistsBySecurityNoAndIdNot_thenReturnTrue() {
+        // given
+        given(customerRepository.existsBySecurityNoAndIdNot(any(String.class), any(String.class))).willReturn(true);
+
+        // when
+        Boolean result = customerService.existsBySecurityNoAndIdNot(UUID.randomUUID().toString(), UUID.randomUUID().toString());
+
+        // then
+        verify(customerRepository, times(1)).existsBySecurityNoAndIdNot(any(), any());
+        assertTrue(result);
+    }
+
+    @Test
+    void givenExistingById_wheExistsBySecurityNoAndIdNot_thenReturnFalse() {
+        // given
+        given(customerRepository.existsBySecurityNoAndIdNot(any(String.class), any(String.class))).willReturn(false);
+
+        // when
+        Boolean result = customerService.existsBySecurityNoAndIdNot(UUID.randomUUID().toString(), UUID.randomUUID().toString());
+
+        // then
+        verify(customerRepository, times(1)).existsBySecurityNoAndIdNot(any(), any());
+        assertFalse(result);
+    }
+
 
     @Test
     void givenNotExistingById_whenGetCustomerById_thenThrowException() {
@@ -198,6 +276,38 @@ class CustomerServiceImplTest {
         assertEquals(customer.getFirstName(), expectedCustomerResponse.getFirstName());
         assertEquals(customer.getLastName(), expectedCustomerResponse.getLastName());
         assertEquals(customer.getDateOfBirth(), expectedCustomerResponse.getDateOfBirth());
+    }
+
+    @Test
+    void givenExistingCustomerWithAlreadyExistsNewSecurityNo_whenUpdateCustomer_thenShouldReturnCustomer() {
+        // given
+        Customer customer = Customer.builder()
+                .id(UUID.randomUUID().toString())
+                .firstName("George")
+                .lastName("Chair")
+                .securityNo(UUID.randomUUID().toString())
+                .dateOfBirth(LocalDate.of(1980, 11, 12))
+                .build();
+
+        CustomerRequest customerRequest = CustomerRequest.builder()
+                .firstName(customer.getFirstName())
+                .lastName(customer.getLastName())
+                .securityNo(customer.getSecurityNo())
+                .dateOfBirth(customer.getDateOfBirth())
+                .build();
+
+        given(customerRepository.findById(any(String.class))).willReturn(Optional.of(customer));
+        given(customerRepository.existsBySecurityNoAndIdNot(any(String.class), any(String.class))).willReturn(true);
+
+        // when
+        Throwable throwable = catchThrowable(() -> {
+            customerService.updateCustomer(customer.getId(), customerRequest);
+        });
+
+        // then
+        verify(customerRepository, times(1)).findById(any(String.class));
+        verify(customerRepository, times(1)).existsBySecurityNoAndIdNot(any(String.class), any(String.class));
+        assertThat(throwable).isInstanceOf(AlreadyExistsElementException.class);
     }
 
     @Test
