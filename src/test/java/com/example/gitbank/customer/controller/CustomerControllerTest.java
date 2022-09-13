@@ -61,9 +61,6 @@ class CustomerControllerTest {
                 .dateOfBirth(customer.getDateOfBirth())
                 .build();
 
-        given(customerService.createCustomer(any())).willReturn(customerResponse);
-
-        // when
         CustomerRequest customerRequest = CustomerRequest.builder()
                 .firstName(customer.getFirstName())
                 .lastName(customer.getLastName())
@@ -71,6 +68,9 @@ class CustomerControllerTest {
                 .dateOfBirth(customer.getDateOfBirth())
                 .build();
 
+        given(customerService.createCustomer(any())).willReturn(customerResponse);
+
+        // when
         MockHttpServletRequestBuilder mockRequest = MockMvcRequestBuilders.post(CUSTOMER_ENDPOINT)
                 .contentType(MediaType.APPLICATION_JSON)
                 .accept(MediaType.APPLICATION_JSON)
@@ -123,7 +123,49 @@ class CustomerControllerTest {
     }
 
     @Test
-    void whenExistingCustomer_whenUpdateCustomer_thenReturnCustomer() {
+    void whenExistingCustomer_whenUpdateCustomer_thenReturnCustomer() throws Exception {
+        // given
+        Customer customer = Customer.builder()
+                .id(UUID.randomUUID().toString())
+                .firstName("George")
+                .lastName("Chair")
+                .securityNo(UUID.randomUUID().toString())
+                .dateOfBirth(LocalDate.of(1980, 11, 12))
+                .build();
+
+        CustomerResponse customerResponse = CustomerResponse.builder()
+                .id(customer.getId())
+                .firstName(customer.getFirstName())
+                .lastName(customer.getLastName())
+                .securityNo(customer.getSecurityNo())
+                .dateOfBirth(customer.getDateOfBirth())
+                .build();
+
+        CustomerRequest customerRequest = CustomerRequest.builder()
+                .firstName(customer.getFirstName())
+                .lastName(customer.getLastName())
+                .securityNo(customer.getSecurityNo())
+                .dateOfBirth(customer.getDateOfBirth())
+                .build();
+
+        given(customerService.updateCustomer(any(String.class),any(CustomerRequest.class)))
+                .willReturn(customerResponse);
+
+        // when
+        MockHttpServletRequestBuilder mockRequest = MockMvcRequestBuilders
+                .put(CUSTOMER_ENDPOINT + "/{id}", customer.getId())
+                .contentType(MediaType.APPLICATION_JSON)
+                .accept(MediaType.APPLICATION_JSON)
+                .content(mapper.writeValueAsBytes(customerRequest));
+
+        // then
+        mockMvc.perform(mockRequest)
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.id").value(customerResponse.getId()))
+                .andExpect(jsonPath("$.data.firstName").value(customerResponse.getFirstName()))
+                .andExpect(jsonPath("$.data.lastName").value(customerResponse.getLastName()))
+                .andExpect(jsonPath("$.data.securityNo").value(customerResponse.getSecurityNo()))
+                .andExpect(jsonPath("$.data.dateOfBirth").value(customerResponse.getDateOfBirth().toString()));
 
     }
 
